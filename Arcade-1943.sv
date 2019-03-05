@@ -91,7 +91,7 @@ module emu
 	output        AUDIO_S    // 1 - signed audio samples, 0 - unsigned
 );
 
-assign LED_USER  = ioctl_download;
+assign LED_USER  = downloading;
 assign LED_DISK  = 0;
 assign LED_POWER = 0;
 
@@ -125,21 +125,18 @@ wire clk_sys, clk_rom;
 pll pll
 (
 	.refclk(CLK_50M),
-    .outclk_0(clk_sys),
+    .outclk_0(clk_sys), // 12MHz
     .outclk_1(clk_rom),
 	.outclk_2(SDRAM_CLK)
 );
 
-reg ce_12, ce_6, ce_3, ce_1p5;
-always @(posedge clk_sys) begin
-	reg [3:0] div;
-	
-	div <= div + 1'd1;
-	ce_12  <= !div[0:0];
-	ce_6   <= !div[1:0];
-	ce_3   <= !div[2:0];
-	ce_1p5 <= !div[3:0];
-end
+jtgng_cen #(.CLK_SPEED(12)) u_cen(
+    .clk    ( clk_sys   ),
+    .cen12  ( cen12     ),
+    .cen6   ( cen6      ),
+    .cen3   ( cen3      ),
+    .cen1p5 ( cen1p5    )
+);
 
 
 ///////////////////////////////////////////////////
@@ -147,60 +144,60 @@ end
 wire [31:0] status;
 wire  [1:0] buttons;
 
-wire        ioctl_download;
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
-wire  [7:0] ioctl_dout;
+wire  [7:0] ioctl_data;
 
 wire [10:0] ps2_key;
 
 wire [15:0] joy_0, joy_1;
 
 wire        forced_scandoubler;
+wire        downloading;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
-	.clk_sys(clk_sys),
-	.HPS_BUS(HPS_BUS),
+    .clk_sys(clk_sys),
+    .HPS_BUS(HPS_BUS),
 
-	.conf_str(CONF_STR),
+    .conf_str(CONF_STR),
 
-	.buttons(buttons),
-	.status(status),
-	.forced_scandoubler(forced_scandoubler),
+    .buttons(buttons),
+    .status(status),
+    .forced_scandoubler(forced_scandoubler),
 
-	.ioctl_download(ioctl_download),
-	.ioctl_wr(ioctl_wr),
-	.ioctl_addr(ioctl_addr),
-	.ioctl_dout(ioctl_dout),
+    .ioctl_download(downloading),
+    .ioctl_wr(ioctl_wr),
+    .ioctl_addr(ioctl_addr),
+    .ioctl_dout(ioctl_data),
 
-	.joystick_0(joy_0),
-	.joystick_1(joy_1),
-	.ps2_key(ps2_key)
+    .joystick_0(joy_0),
+    .joystick_1(joy_1),
+    .ps2_key(ps2_key)
 );
 
 wire       pressed = ps2_key[9];
 wire [7:0] code    = ps2_key[7:0];
 always @(posedge clk_sys) begin
-	reg old_state;
-	old_state <= ps2_key[10];
-	
-	if(old_state != ps2_key[10]) begin
-		case(code)
-			'h75: btn_up         <= pressed; // up
-			'h72: btn_down       <= pressed; // down
-			'h6B: btn_left      	<= pressed; // left
-			'h74: btn_right      <= pressed; // right
-			'h05: btn_one_player <= pressed; // F1
-			'h06: btn_two_players<= pressed; // F2
-			'h04: btn_coin			<= pressed; // F3
-			'h0C: btn_pause		<= pressed; // F4
-			'h03: btn_test			<= pressed; // F5
-			'h14: btn_fire1 		<= pressed; // ctrl
-			'h11: btn_fire1 		<= pressed; // alt
-			'h29: btn_fire2   	<= pressed; // Space
-		endcase
-	end
+    reg old_state;
+    old_state <= ps2_key[10];
+    
+    if(old_state != ps2_key[10]) begin
+        case(code)
+            'h75: btn_up         <= pressed; // up
+            'h72: btn_down       <= pressed; // down
+            'h6B: btn_left          <= pressed; // left
+            'h74: btn_right      <= pressed; // right
+            'h05: btn_one_player <= pressed; // F1
+            'h06: btn_two_players<= pressed; // F2
+            'h04: btn_coin          <= pressed; // F3
+            'h0C: btn_pause     <= pressed; // F4
+            'h03: btn_test          <= pressed; // F5
+            'h14: btn_fire1         <= pressed; // ctrl
+            'h11: btn_fire1         <= pressed; // alt
+            'h29: btn_fire2     <= pressed; // Space
+        endcase
+    end
 end
 
 reg btn_one_player = 0;
@@ -231,11 +228,11 @@ wire m_coin   = btn_coin        | joy[8];
 
 reg pause = 0;
 always @(posedge clk_sys) begin
-	reg old_pause;
-	
-	old_pause <= m_pause;
-	if(~old_pause & m_pause) pause <= ~pause;
-	if(status[0] | buttons[1]) pause <= 0;
+    reg old_pause;
+    
+    old_pause <= m_pause;
+    if(~old_pause & m_pause) pause <= ~pause;
+    if(status[0] | buttons[1]) pause <= 0;
 end
 
 ///////////////////////////////////////////////////////////////////
@@ -246,26 +243,25 @@ wire [3:0] r,g,b;
 
 arcade_rotate_fx #(256,224,12,1) arcade_video
 (
-	.*,
+    .*,
 
-	.clk_video(clk_sys),
-	.ce_pix(ce_6),
+    .clk_video(clk_sys),
+    .ce_pix(cen6),
 
-	.RGB_in({r,g,b}),
-	.HBlank(~hblank),
-	.VBlank(~vblank),
-	.HSync(hs),
-	.VSync(vs),
-	
-	.fx(status[5:3]),
-	.no_rotate(status[2])
+    .RGB_in({r,g,b}),
+    .HBlank(~hblank),
+    .VBlank(~vblank),
+    .HSync(hs),
+    .VSync(vs),
+    
+    .fx(status[5:3]),
+    .no_rotate(status[2])
 );
 
 ///////////////////////////////////////////////////////////////////
 
 wire reset = RESET | status[0] | buttons[1];
 
-wire         downloading;
 wire         prog_we;
 wire [21:0]  prog_addr;
 wire [ 7:0]  prog_data;
@@ -277,13 +273,15 @@ wire         read_req;
 wire [31:0]  data_read;
 wire [21:0]  sdram_addr;
 
+wire         sdram_re;
+
 
 jtgng_sdram u_sdram(
     .rst        ( RESET         ),
     .clk        ( clk_rom       ), // 108 MHz
     .loop_rst   ( loop_rst      ),
     .autorefresh( autorefresh   ),
-    .read_req   ( read_req      ),    // read strobe
+    .read_req   ( sdram_re      ),    // read enable, active on both edges
     .data_read  ( data_read     ),
     .sdram_addr ( sdram_addr    ),
     // ROM-load interface
@@ -328,10 +326,10 @@ jt1943_game game
 
 	.clk_rom       ( clk_rom    ),
 	.clk           ( clk_sys    ),
-	.cen12         ( ce_12      ),
-	.cen6          ( ce_6       ),
-	.cen3          ( ce_3       ),
-	.cen1p5        ( ce_1p5     ),
+	.cen12         ( cen12      ),
+	.cen6          ( cen6       ),
+	.cen3          ( cen3       ),
+	.cen1p5        ( cen1p5     ),
 
 	.red(r),
 	.green(g),

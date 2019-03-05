@@ -810,8 +810,6 @@ sync_fix sync_v(clk_vid, vs_emu, vs);
 sync_fix sync_h(clk_vid, hs_emu, hs);
 
 assign audio_mix = 0;
-assign {SDIO_CLK, SDIO_CMD, SDIO_DAT[3]} = {3{1'bZ}};
-assign {SDRAM_DQ, SDRAM_A, SDRAM_BA, SDRAM_CLK, SDRAM_CKE, SDRAM_DQML, SDRAM_DQMH, SDRAM_nWE, SDRAM_nCAS, SDRAM_nRAS, SDRAM_nCS} = {39{1'bZ}};
 
 emu emu
 (
