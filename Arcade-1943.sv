@@ -45,20 +45,6 @@ module emu
 	output        VGA_VS,
 	output        VGA_DE,    // = ~(VBlank | HBlank)
 
-
-    //////////// SDRAM ///////////
-    output [12:0] SDRAM_A,
-    inout  [15:0] SDRAM_DQ,
-    output        SDRAM_DQML,
-    output        SDRAM_DQMH,
-    output        SDRAM_nWE,
-    output        SDRAM_nCAS,
-    output        SDRAM_nRAS,
-    output        SDRAM_nCS,
-    output  [1:0] SDRAM_BA,
-    output        SDRAM_CLK,
-    output        SDRAM_CKE,
-
 	//Base video clock. Usually equals to CLK_SYS.
 	output        HDMI_CLK,
 
@@ -88,7 +74,21 @@ module emu
 
 	output [15:0] AUDIO_L,
 	output [15:0] AUDIO_R,
-	output        AUDIO_S    // 1 - signed audio samples, 0 - unsigned
+	output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
+
+	//SDRAM interface with lower latency
+	output        SDRAM_CLK,
+	output        SDRAM_CKE,
+	output [12:0] SDRAM_A,
+	output  [1:0] SDRAM_BA,
+	inout  [15:0] SDRAM_DQ,
+	output        SDRAM_DQML,
+	output        SDRAM_DQMH,
+	output        SDRAM_nCS,
+	output        SDRAM_nCAS,
+	output        SDRAM_nRAS,
+	output        SDRAM_nWE
+
 );
 
 assign LED_USER  = downloading;
@@ -126,12 +126,12 @@ wire cen12, cen6, cen3, cen1p5;
 pll pll
 (
 	.refclk(CLK_50M),
-    .outclk_0(clk_sys), // 12MHz
-    .outclk_1(clk_rom),
-	.outclk_2(SDRAM_CLK)
+	.outclk_0(clk_rom),
+	.outclk_1(SDRAM_CLK),
+	.outclk_2(clk_sys) // 24MHz
 );
 
-jtgng_cen #(.CLK_SPEED(12)) u_cen(
+jtgng_cen #(.CLK_SPEED(24)) u_cen(
     .clk    ( clk_sys   ),
     .cen12  ( cen12     ),
     .cen6   ( cen6      ),

@@ -810,6 +810,7 @@ sync_fix sync_v(clk_vid, vs_emu, vs);
 sync_fix sync_h(clk_vid, hs_emu, hs);
 
 assign audio_mix = 0;
+assign {SDIO_CLK, SDIO_CMD, SDIO_DAT[3]} = {3{1'bZ}};
 
 emu emu
 (
@@ -838,26 +839,25 @@ emu emu
 	.HDMI_ARX(ARX),
 	.HDMI_ARY(ARY),
 
-    //////////// SDRAM ///////////
-    .SDRAM_A    ( SDRAM_A       ),
-    .SDRAM_DQ   ( SDRAM_DQ      ),
-    .SDRAM_DQML ( SDRAM_DQML    ),
-    .SDRAM_DQMH ( SDRAM_DQMH    ),
-    .SDRAM_nWE  ( SDRAM_nWE     ),
-    .SDRAM_nCAS ( SDRAM_nCAS    ),
-    .SDRAM_nRAS ( SDRAM_nRAS    ),
-    .SDRAM_nCS  ( SDRAM_nCS     ),
-    .SDRAM_BA   ( SDRAM_BA      ),
-    .SDRAM_CLK  ( SDRAM_CLK     ),
-    .SDRAM_CKE  ( SDRAM_CKE     ),    
-
 	.LED_USER(led_user),
 	.LED_POWER(led_power),
 	.LED_DISK(led_disk),
 
 	.AUDIO_L(audio_ls),
 	.AUDIO_R(audio_rs),
-	.AUDIO_S(audio_s)
+	.AUDIO_S(audio_s),
+
+	.SDRAM_DQ(SDRAM_DQ),
+	.SDRAM_A(SDRAM_A),
+	.SDRAM_DQML(SDRAM_DQML),
+	.SDRAM_DQMH(SDRAM_DQMH),
+	.SDRAM_BA(SDRAM_BA),
+	.SDRAM_nCS(SDRAM_nCS),
+	.SDRAM_nWE(SDRAM_nWE),
+	.SDRAM_nRAS(SDRAM_nRAS),
+	.SDRAM_nCAS(SDRAM_nCAS),
+	.SDRAM_CLK(SDRAM_CLK),
+	.SDRAM_CKE(SDRAM_CKE)
 );
 
 endmodule
