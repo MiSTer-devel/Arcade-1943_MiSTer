@@ -121,6 +121,7 @@ localparam CONF_STR = {
 ////////////////////   CLOCKS   ///////////////////
 
 wire clk_sys, clk_rom;
+wire cen12, cen6, cen3, cen1p5;
 
 pll pll
 (

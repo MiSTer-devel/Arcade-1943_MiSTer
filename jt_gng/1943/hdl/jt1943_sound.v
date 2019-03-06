@@ -74,7 +74,7 @@ always @(negedge clk)
     end else begin
         if( rst_cnt != ~4'b0 ) begin
             reset_n <= 1'b0;
-            rst_cnt <= rst_cnt + 'd1;
+            rst_cnt <= rst_cnt + 4'd1;
         end else reset_n <= 1'b1;
     end
 
