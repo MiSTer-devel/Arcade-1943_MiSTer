@@ -623,6 +623,10 @@ scanlines #(0) VGA_scanlines
 	.vs(vs1)
 );
 
+wire [23:0] vga_q;
+wire [23:0] vga_o;
+
+`ifndef NOVGA
 osd vga_osd
 (
 	.clk_sys(clk_sys),
@@ -637,9 +641,6 @@ osd vga_osd
 	.de_in(de)
 );
 
-wire [23:0] vga_q;
-wire [23:0] vga_o;
-
 vga_out vga_out
 (
 	.ypbpr_full(1),
@@ -647,6 +648,9 @@ vga_out vga_out
 	.dout(vga_o),
 	.din(vga_scaler ? {24{HDMI_TX_DE}} & HDMI_TX_D : vga_q)
 );
+`else
+assign vga_o = 24'd0;
+`endif
 
 wire vs1 = vga_scaler ? HDMI_TX_VS : vs;
 wire hs1 = vga_scaler ? HDMI_TX_HS : hs;
@@ -699,6 +703,7 @@ sigma_delta_dac #(15) dac_r
 );
 
 wire aspdif;
+`ifndef NOSPDIF
 spdif toslink
 (
 	.clk_i(clk_audio),
@@ -711,6 +716,9 @@ spdif toslink
 
 	.spdif_o(aspdif)
 );
+`else
+assign aspdif=1'b0;
+`endif
 
 wire [15:0] audio_l, audio_l_pre;
 aud_mix_top audmix_l

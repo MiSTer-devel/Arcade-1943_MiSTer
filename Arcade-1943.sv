@@ -120,15 +120,21 @@ localparam CONF_STR = {
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_sys, clk_rom;
+wire clk_sys, clk_rom, clk24;
 wire cen12, cen6, cen3, cen1p5;
 
 pll pll
 (
-	.refclk(CLK_50M),
-	.outclk_0(clk_rom),
-	.outclk_1(SDRAM_CLK),
-	.outclk_2(clk_sys) // 24MHz
+	.refclk     ( CLK_50M   ),
+	.outclk_0   ( clk_rom   ),
+	.outclk_1   ( SDRAM_CLK ),
+	.outclk_2   ( clk_sys   )  // 12 MHz
+);
+
+pll24 pll24
+(
+    .refclk  ( clk_sys   ),
+    .outclk_0( clk24     )     // 24 MHz
 );
 
 jtgng_cen #(.CLK_SPEED(24)) u_cen(
@@ -246,7 +252,7 @@ arcade_rotate_fx #(256,224,12,1) arcade_video
 (
     .*,
 
-    .clk_video(clk_sys),
+    .clk_video(clk24),
     .ce_pix(cen6),
 
     .RGB_in({r,g,b}),
