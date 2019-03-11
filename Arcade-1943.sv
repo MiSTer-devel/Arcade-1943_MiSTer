@@ -128,23 +128,8 @@ pll pll
 	.refclk     ( CLK_50M   ),
 	.outclk_0   ( clk_rom   ),
 	.outclk_1   ( SDRAM_CLK ),
-	.outclk_2   ( clk_sys   )  // 12 MHz
+	.outclk_2   ( clk_sys   )  // 24 MHz
 );
-
-pll24 pll24
-(
-    .refclk  ( clk_sys   ),
-    .outclk_0( clk24     )     // 24 MHz
-);
-
-jtgng_cen #(.CLK_SPEED(24)) u_cen(
-    .clk    ( clk_sys   ),
-    .cen12  ( cen12     ),
-    .cen6   ( cen6      ),
-    .cen3   ( cen3      ),
-    .cen1p5 ( cen1p5    )
-);
-
 
 ///////////////////////////////////////////////////
 
@@ -252,7 +237,7 @@ arcade_rotate_fx #(256,224,12,1) arcade_video
 (
     .*,
 
-    .clk_video(clk24),
+    .clk_video(clk_sys),
     .ce_pix(cen6),
 
     .RGB_in({r,g,b}),
@@ -327,7 +312,7 @@ always @(*)
         2'b11: dip_level = 4'b0000; // very hard
     endcase // status[3:2]
 
-jt1943_game game
+jt1943_game #(.CLK_SPEED(24)) game
 (
 	.rst(reset),
 
@@ -383,7 +368,8 @@ jt1943_game game
     .dip_price1  ( dip_price1     ),
     .dip_flip    ( 0              ),
 
-	.snd         ( AUDIO_L        )
+	.snd         ( AUDIO_L        ),
+    .gfx_en      ( ~4'b0          )
 );
 
 assign AUDIO_R = AUDIO_L;

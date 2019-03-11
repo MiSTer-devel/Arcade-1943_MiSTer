@@ -16,6 +16,8 @@
     Version: 1.0
     Date: 1-13-2019 */
 
+`timescale 1ns/1ps
+
 module jt1943_obj(
     input              rst,
     input              clk,
@@ -90,7 +92,7 @@ assign AB[4:2] = 3'b0;
 
 
 // Parse sprite data per line
-jtgng_objbuf u_buf(
+jtgng_objbuf #(.OBJMAX(10'h1FF),.OBJMAX_LINE(5'd31)) u_buf(
     .rst            ( rst           ),
     .clk            ( clk           ),
     .cen6           ( cen6          ),    //  6 MHz
@@ -118,7 +120,11 @@ jt1943_objdraw u_draw(
     .rst            ( rst           ),
     .clk            ( clk           ),
     .cen6           ( cen6          ),    //  6 MHz
+`ifndef OBJTEST
     .OBJON          ( OBJON         ),
+`else 
+    .OBJON          ( 1'b1          ),
+`endif
     // screen
     .VF             ( VF            ),
     .pxlcnt         ( pxlcnt        ),

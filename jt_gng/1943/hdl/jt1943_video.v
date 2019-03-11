@@ -16,6 +16,8 @@
     Version: 1.0
     Date: 19-2-2019 */
 
+`timescale 1ns/1ps
+
 module jt1943_video(
     input               rst,
     input               clk,
@@ -89,7 +91,9 @@ module jt1943_video(
     input               prom_12m_we,
         // obj
     input               prom_7c_we,
-    input               prom_8c_we
+    input               prom_8c_we,
+    // Debug
+    input       [3:0]   gfx_en
 );
 
 wire [3:0] char_pxl;
@@ -243,7 +247,9 @@ jt1943_colmix u_colmix (
     // output
     .red        ( red           ),
     .green      ( green         ),
-    .blue       ( blue          )
+    .blue       ( blue          ),
+    // debug
+    .gfx_en     ( gfx_en        )
 );
 `else
 assign  red = 4'd0;

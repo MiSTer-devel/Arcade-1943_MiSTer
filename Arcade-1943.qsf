@@ -29,7 +29,7 @@ set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSEBA6U23I7
 set_global_assignment -name TOP_LEVEL_ENTITY sys_top
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 16.1.2
-set_global_assignment -name LAST_QUARTUS_VERSION "17.1.0 Lite Edition"
+set_global_assignment -name LAST_QUARTUS_VERSION "17.0.0 Standard Edition"
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "01:53:30  APRIL 20, 2017"
 set_global_assignment -name DEVICE_FILTER_PACKAGE UFBGA
 set_global_assignment -name DEVICE_FILTER_PIN_COUNT 672
@@ -51,7 +51,7 @@ set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS OFF
 set_global_assignment -name OPTIMIZE_POWER_DURING_FITTING OFF
 set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION ALWAYS
 set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
-set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_global_assignment -name OPTIMIZATION_MODE BALANCED
 set_global_assignment -name ALLOW_POWER_UP_DONT_CARE ON
 set_global_assignment -name QII_AUTO_PACKED_REGISTERS NORMAL
 set_global_assignment -name ROUTER_LCELL_INSERTION_AND_LOGIC_DUPLICATION ON
@@ -204,7 +204,6 @@ set_location_assignment PIN_AH3 -to SDRAM_DQ[15]
 set_location_assignment PIN_AG13 -to SDRAM_DQML
 set_location_assignment PIN_AF13 -to SDRAM_DQMH
 
-set_location_assignment PIN_AD20 -to SDRAM_CLK
 set_location_assignment PIN_AG10 -to SDRAM_CKE
 
 set_location_assignment PIN_AA19 -to SDRAM_nWE
@@ -374,4 +373,7 @@ set_global_assignment -name QIP_FILE jt_gng/modules/jt12/hdl/jt03.qip
 set_global_assignment -name QIP_FILE jt_gng/modules/t80/T80.qip
 set_global_assignment -name QIP_FILE jt_gng/1943/hdl/jt1943.qip
 set_global_assignment -name SYSTEMVERILOG_FILE "Arcade-1943.sv"
+set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[0].gpll"
+set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[1].gpll"
+set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[2].gpll"
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

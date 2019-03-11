@@ -165,7 +165,10 @@ always @(posedge clk)
             read_cycle        <= 1'b0;
             autorefresh_cycle <= 1'b0;
             burst_done        <= 1'b0;
-            if( read_cycle) data_read[31:16] <= SDRAM_DQ;
+            if( read_cycle) begin
+                data_read[15: 0] <= data_read[31:16];
+                data_read[31:16] <= SDRAM_DQ;
+            end
             {SDRAM_DQMH, SDRAM_DQML } <= 2'b00;
             if( set_burst ) begin
                 SDRAM_CMD <= CMD_LOAD_MODE;
@@ -203,7 +206,7 @@ always @(posedge clk)
         end
         3'd5: begin
             if( read_cycle) begin
-                data_read[15:0] <= SDRAM_DQ;
+                data_read[31:16] <= SDRAM_DQ;
             end
             SDRAM_CMD <= CMD_NOP;
         end
