@@ -27,6 +27,7 @@ module jt1943_objdraw(
     input       [7:0]  VF,
     input       [3:0]  pxlcnt,
     output reg  [8:0]  posx,
+    input              pause,
     // per-line sprite data
     input       [4:0]  objcnt,
     input       [7:0]  objbuf_data,
@@ -95,16 +96,34 @@ assign new_col = { w[3],x[3],y[3],z[3] };
 wire [7:0] pal_addr = { objpal, new_col };
 wire [7:0] prom_dout;
 
+wire [15:0] avatar_data;
+reg  [ 7:0] avatar_pxl;
+
 always @(posedge clk ) if(cen6) begin
     posx2 <= posx1; // 1-clk delay to match the PROM data
     if( OBJON ) begin
-        new_pxl <= prom_dout;
+        new_pxl <= pause ? avatar_pxl : prom_dout;
         posx    <= posx2;
     end else begin
         new_pxl <= 4'hf;
         posx    <= 9'h100;
     end
 end
+
+// Alternative Objects during pause
+jtgng_ram #(.dw(16), .aw(12), .synfile("avatar.hex"),.cen_rd(1))u_avatars(
+    .clk    ( clk            ),
+    .cen    ( pause          ),  // tiny power saving when not in pause
+    .data   ( 16'd0          ),
+    .addr   ( obj_addr[11:0] ),
+    .we     ( 1'b0           ),
+    .q      ( avatar_data    )
+);
+
+// avatar image does not use the PROMs here
+always @(posedge clk) if(cen6)
+    avatar_pxl <= { objpal, z[3], y[3], x[3], w[3] };
+
 
 always @(posedge clk) if(cen6) begin
     if( pxlcnt[3:0]==4'h7 ) begin
@@ -116,7 +135,7 @@ always @(posedge clk) if(cen6) begin
     if( pxlcnt == 4'd6 ) vinzone2 <= vinzone;
     case( pxlcnt[1:0] )
         2'd3:  // new data starts at count 7
-                {z,y,x,w} <= objrom_data;  //vinzone2 ? objrom_data[15:0] : 16'hffff;
+                {z,y,x,w} <= pause ? avatar_data : objrom_data;
         default: begin
                 z <= z << 1;
                 y <= y << 1;

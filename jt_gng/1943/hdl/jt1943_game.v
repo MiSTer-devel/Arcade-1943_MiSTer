@@ -293,9 +293,14 @@ jt1943_video u_video(
     .H          ( H             ),
     .rd_n       ( rd_n          ),
     .wr_n       ( wr_n          ),
-    .flip       ( flip          ),
     .cpu_dout   ( cpu_dout      ),
-    .pause      ( ~dip_pause    ), //dipsw_a[7]    ),
+`ifdef ALWAYS_PAUSE
+    .pause      ( 1'b1          ),
+    .flip       ( 1'b0          ),
+`else
+    .flip       ( flip          ),
+    .pause      ( ~dip_pause    ),
+`endif
     // CHAR
     .char_cs    ( char_cs       ),
     .chram_dout ( chram_dout    ),

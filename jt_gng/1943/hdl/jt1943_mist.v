@@ -153,7 +153,7 @@ u_frame(
     .clk_rgb        ( clk_rgb        ),
     .clk_rom        ( clk_rom        ),
     .cen12          ( cen12          ),
-    .cen6           ( cen6           ),
+    .pxl_cen        ( cen6           ),
     .status         ( status         ),
     // Base video
     .osd_rotate     ( { dip_flip, 1'b1 } ),
@@ -208,6 +208,7 @@ u_frame(
     .data_read      ( data_read      ),
 //////////// board
     .rst            ( rst            ),
+    .rst_n          (                ), // unused
     .game_rst       ( game_rst       ),
     // reset forcing signals:
     .dip_flip       ( dip_flip       ),
@@ -222,6 +223,7 @@ u_frame(
     .game_coin      ( game_coin      ),
     .game_start     ( game_start     ),
     .game_pause     ( game_pause     ),
+    .game_service   (                ), // unused
     // Debug
     .gfx_en         ( gfx_en         )
 );

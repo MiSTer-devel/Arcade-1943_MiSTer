@@ -103,6 +103,8 @@ wire [7:0] obj_pxl;
 localparam chr_off = 8'd4;
 localparam scr_off = 8'd12;
 
+wire [2:0] avatar_idx;
+
 `ifndef NOCHAR
 jt1943_char #(.HOFFSET(chr_off)) u_char (
     .clk        ( clk           ),
@@ -121,7 +123,9 @@ jt1943_char #(.HOFFSET(chr_off)) u_char (
     .wr_n       ( wr_n          ),
     .wait_n     ( char_wait_n   ),
     .char_pxl   ( char_pxl      ),
+    // Pause screen
     .pause      ( pause         ),
+    .avatar_idx ( avatar_idx    ),
     // Palette PROM F1
     .prog_addr  ( prog_addr     ),
     .prom_din   ( prog_din      ),
@@ -216,7 +220,7 @@ jt1943_scroll #(.HOFFSET(scr_off),
     .scr_pxl      ( scr2_pxl      )
 );
 `else
-assign scr1_pxl  = ~6'h0;
+assign scr1_pxl  = 6'h31;
 assign scr1_addr = 17'h0;
 assign map1_addr = 14'h0;
 
@@ -233,6 +237,7 @@ jt1943_colmix u_colmix (
     .cen6       ( cen6          ),
     .LVBL       ( LVBL          ),
     .LHBL       ( LHBL          ),
+    .pause      ( pause         ),
     // pixel input from generator modules
     .char_pxl   ( char_pxl      ),        // character color code
     .scr1_pxl   ( scr1_pxl      ),
@@ -260,27 +265,30 @@ assign green= 4'd0;
 
 `ifndef NOOBJ
 jt1943_obj u_obj(
-    .rst            ( rst       ),
-    .clk            ( clk       ),
-    .cen6           ( cen6      ),
+    .rst            ( rst        ),
+    .clk            ( clk        ),
+    .cen6           ( cen6       ),
     //.cen3           ( cen3      ),
     // screen
-    .OBJON          ( OBJON     ),
-    .HINIT          ( HINIT     ),
-    .LHBL           ( LHBL_obj  ),
-    .LVBL           ( LVBL      ),
-    .LVBL_obj       ( LVBL_obj  ),
-    .V              ( V         ),
-    .H              ( H         ),
-    .flip           ( flip      ),
+    .OBJON          ( OBJON      ),
+    .HINIT          ( HINIT      ),
+    .LHBL           ( LHBL_obj   ),
+    .LVBL           ( LVBL       ),
+    .LVBL_obj       ( LVBL_obj   ),
+    .V              ( V          ),
+    .H              ( H          ),
+    .flip           ( flip       ),
+    // Pause screen
+    .pause          ( pause      ),
+    .avatar_idx     ( avatar_idx ),
     // CPU bus
-    .AB             ( obj_AB    ),
-    .DB             ( obj_DB    ),
+    .AB             ( obj_AB     ),
+    .DB             ( obj_DB     ),
     // shared bus
-    .OKOUT          ( OKOUT     ),
-    .bus_req        ( bus_req   ),        // Request bus
-    .bus_ack        ( bus_ack   ),    // bus acknowledge
-    .blen           ( blcnten   ),   // bus line counter enable
+    .OKOUT          ( OKOUT      ),
+    .bus_req        ( bus_req    ),        // Request bus
+    .bus_ack        ( bus_ack    ),    // bus acknowledge
+    .blen           ( blcnten    ),   // bus line counter enable
     // SDRAM interface
     .obj_addr       ( obj_addr    ),
     .objrom_data    ( objrom_data ),
