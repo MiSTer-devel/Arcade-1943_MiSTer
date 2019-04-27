@@ -120,7 +120,7 @@ localparam CONF_STR = {
 
 ////////////////////   CLOCKS   ///////////////////
 
-wire clk_sys, clk_rom, clk24;
+wire clk_sys, clk_rom;
 wire cen12, cen6, cen3, cen1p5;
 wire pll_locked;
 
@@ -258,7 +258,7 @@ arcade_rotate_fx #(256,224,12,1) arcade_video
 reg [1:0] rstsr;
 wire reset = rstsr[1];
 
-always @(negedge clk24) begin
+always @(negedge clk_sys) begin
     if( RESET || status[0] || buttons[1] || pll_locked ) rstsr <= 2'b11;
     else rstsr <= { rstsr[0], 1'b0 };
 end
