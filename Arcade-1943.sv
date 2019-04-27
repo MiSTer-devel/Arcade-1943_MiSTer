@@ -259,7 +259,7 @@ reg [1:0] rstsr;
 wire reset = rstsr[1];
 
 always @(negedge clk_sys) begin
-    if( RESET || status[0] || buttons[1] || !pll_locked || downloading ) rstsr <= 2'b11;
+    if( RESET || status[0] || buttons[1] || !pll_locked ) rstsr <= 2'b11;
     else rstsr <= { rstsr[0], 1'b0 };
 end
 
