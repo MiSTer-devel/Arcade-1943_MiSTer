@@ -88,7 +88,7 @@ wire HINIT;
 wire [12:0] cpu_AB;
 wire char_cs;
 wire flip;
-wire [7:0] cpu_dout;
+wire [ 7:0] cpu_dout;
 wire [ 7:0] chram_dout;
 wire rd;
 wire rom_ready;
@@ -144,7 +144,7 @@ wire [ 7:0]  main_dout;
 wire [15:0]  char_dout, obj_dout, map1_dout, map2_dout, scr1_dout, scr2_dout;
 
 wire snd_latch_cs;
-wire char_wait_n;
+wire char_wait;
 
 wire [12:0] prom_we;
 
@@ -185,6 +185,7 @@ wire CHON, OBJON, SC2ON, SC1ON;
 wire cpu_cen, main_cs;
 wire OKOUT, blcnten, bus_req, bus_ack;
 wire [12:0] obj_AB;
+wire main_ok;
 
 //wire video_flip = dip_flip ^ flip; // Original 1943 did not have this DIP bit.
 
@@ -194,7 +195,8 @@ jt1943_main u_main(
     .clk        ( clk           ),
     .cen6       ( cen6          ),
     .cen3       ( cen3          ),
-    .char_wait_n( char_wait_n   ),
+    .char_wait( char_wait     ),
+    .rom_ok     ( main_ok       ),
     // sound
     .sres_b       ( sres_b        ),
     .snd_latch_cs ( snd_latch_cs  ),
@@ -227,7 +229,7 @@ jt1943_main u_main(
     .bus_req    ( bus_req       ),
     .bus_ack    ( bus_ack       ),
     // ROM
-    .main_cs    ( main_cs       ),
+    .rom_cs     ( main_cs       ),
     .rom_addr   ( main_addr     ),
     .rom_data   ( main_dout     ),
     // Cabinet input
@@ -276,6 +278,7 @@ jt1943_sound u_sound (
     .prog_addr      ( prog_addr[14:0]),
     .prom_4k_we     ( prom_4k_we     ),
     .prom_din       ( prog_data      ),
+    // Sound
     .snd            ( snd            )
 );
 `else
@@ -306,7 +309,7 @@ jt1943_video u_video(
     .chram_dout ( chram_dout    ),
     .char_addr  ( char_addr     ), // CHAR ROM
     .char_data  ( char_dout     ),
-    .char_wait_n( char_wait_n   ),
+    .char_wait  ( char_wait     ),
     .CHON       ( CHON          ),
     // SCROLL - ROM
     .scr1posh_cs( scr1posh_cs   ),
@@ -371,7 +374,10 @@ jt1943_rom2 u_rom (
     .LHBL        ( LHBL          ),
     .LVBL        ( LVBL          ),
     .sdram_re    ( sdram_re      ),
+
     .main_cs     ( main_cs       ),
+    .main_ok     ( main_ok       ),
+
     .char_addr   ( char_addr     ), //  32 kB
     .main_addr   ( main_addr     ), // 160 kB, addressed as 8-bit words
     .obj_addr    ( obj_addr      ),  // 256 kB

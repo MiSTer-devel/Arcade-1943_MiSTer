@@ -114,7 +114,7 @@ wire dip_test  = ~status[4];
 wire dip_upright = 1'b1;
 wire dip_credits2p = 1'b1;
 reg [3:0] dip_level;
-wire dip_demosnd = 1'b0;
+wire dip_demosnd = 1'b1;
 wire dip_continue = 1'b1;
 wire [2:0] dip_price2 = 3'b100;
 wire [2:0] dip_price1 = ~3'b0;
@@ -145,6 +145,10 @@ always @(*)
         2'b11: dip_level = 4'b0000; // very hard
     endcase // status[3:2]
 
+reg LHBL_dly;
+always @(posedge clk_rgb)
+    if(cen6) LHBL_dly <= LHBL;
+
 jtframe_mist #( .CONF_STR(CONF_STR), .CONF_STR_LEN(CONF_STR_LEN),
     .CLK_SPEED(CLK_SPEED),
     .SIGNED_SND(1'b1), .THREE_BUTTONS(1'b1))
@@ -160,7 +164,7 @@ u_frame(
     .game_r         ( red            ),
     .game_g         ( green          ),
     .game_b         ( blue           ),
-    .LHBL           ( LHBL           ),
+    .LHBL           ( LHBL_dly       ),
     .LVBL           ( LVBL           ),
     .hs             ( hs             ),
     .vs             ( vs             ),

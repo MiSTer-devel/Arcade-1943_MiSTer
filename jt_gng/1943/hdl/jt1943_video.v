@@ -38,7 +38,7 @@ module jt1943_video(
     output      [ 7:0]  chram_dout,
     output      [13:0]  char_addr,
     input       [15:0]  char_data,
-    output              char_wait_n,
+    output              char_wait,
     // SCROLL - ROM
     input               SC1ON,
     input               SC2ON,
@@ -100,10 +100,16 @@ wire [3:0] char_pxl;
 wire [5:0] scr1_pxl, scr2_pxl;
 wire [7:0] obj_pxl;
 
-localparam chr_off = 8'd4;
+localparam chr_off = 8'd5;
 localparam scr_off = 8'd12;
 
 wire [2:0] avatar_idx;
+
+`ifdef AVATARS
+wire obj_pause=pause;
+`else 
+wire obj_pause=1'b0;
+`endif
 
 `ifndef NOCHAR
 jt1943_char #(.HOFFSET(chr_off)) u_char (
@@ -121,7 +127,7 @@ jt1943_char #(.HOFFSET(chr_off)) u_char (
     .dout       ( chram_dout    ),
     .rd_n       ( rd_n          ),
     .wr_n       ( wr_n          ),
-    .wait_n     ( char_wait_n   ),
+    .cpu_wait   ( char_wait     ),
     .char_pxl   ( char_pxl      ),
     // Pause screen
     .pause      ( pause         ),
@@ -237,7 +243,7 @@ jt1943_colmix u_colmix (
     .cen6       ( cen6          ),
     .LVBL       ( LVBL          ),
     .LHBL       ( LHBL          ),
-    .pause      ( pause         ),
+    .pause      ( obj_pause     ),
     // pixel input from generator modules
     .char_pxl   ( char_pxl      ),        // character color code
     .scr1_pxl   ( scr1_pxl      ),
@@ -279,7 +285,7 @@ jt1943_obj u_obj(
     .H              ( H          ),
     .flip           ( flip       ),
     // Pause screen
-    .pause          ( pause      ),
+    .pause          ( obj_pause  ),
     .avatar_idx     ( avatar_idx ),
     // CPU bus
     .AB             ( obj_AB     ),

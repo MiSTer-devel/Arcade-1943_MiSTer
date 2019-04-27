@@ -28,8 +28,11 @@ module jt1943_rom2(
         // means a read request
 
     input               main_cs,
+    input               snd_cs,
+
     input       [13:0]  char_addr, //  32 kB
     input       [17:0]  main_addr, // 160 kB, addressed as 8-bit words
+    input       [14:0]   snd_addr, //  32 kB
     input       [16:0]  obj_addr,  // 256 kB
     input       [16:0]  scr1_addr, // 256 kB (16-bit words)
     input       [14:0]  scr2_addr, //  64 kB
@@ -38,12 +41,16 @@ module jt1943_rom2(
 
     output      [15:0]  char_dout,
     output      [ 7:0]  main_dout,
-    output      [15:0]  obj_dout,
+    // output      [ 7:0]   snd_dout,
+    output      [15:0]   obj_dout,
     output      [15:0]  map1_dout,
     output      [15:0]  map2_dout,
     output      [15:0]  scr1_dout,
     output      [15:0]  scr2_dout,
     output  reg         ready,
+
+    output              main_ok,
+    // output              snd_ok,
     // ROM interface
     input               downloading,
     input               loop_rst,
@@ -81,8 +88,9 @@ always @(posedge clk) if(cen12) begin
 end
 
 reg [6:0] data_sel;
-wire main_req, char_req, map1_req, map2_req, scr1_req, scr2_req, obj_req;
+wire main_req, char_req, map1_req, map2_req, scr1_req, scr2_req, obj_req; //, snd_req;
 wire [17:0] main_addr_req;
+// wire [14:0]  snd_addr_req;
 wire [13:0] char_addr_req;
 wire [16:0] obj_addr_req;
 wire [16:0] scr1_addr_req;
@@ -90,24 +98,36 @@ wire [14:0] scr2_addr_req;
 wire [13:0] map1_addr_req;
 wire [13:0] map2_addr_req;
 
+wire blank_b = LVBL && LHBL;
+
 jt1943_romrq #(.AW(18),.INVERT_A0(1)) u_main(
     .rst      ( rst             ),
     .clk      ( clk             ),
     .cen      ( cen12           ),
     .addr     ( main_addr       ),
-    .addr_ok  ( 1'b1            ), // it could be main_cs instead of 1'b1
-        // but that would not allow the main CPU to run at 6MHz
-        // because the main_cs signal is delayed with respect to the
-        // address bus. There is a delay of 250ns (SDRAM CLK=108MHz) from
-        // address set to data available to the requester.
-        // main_cs gets asserted when mreq_n goes low but address bus holds
-        // the address one clock cycle earlier.
+    .addr_ok  ( main_cs         ),
     .addr_req ( main_addr_req   ),
     .din      ( data_read       ),
     .dout     ( main_dout       ),
     .req      ( main_req        ),
+    .data_ok  ( main_ok         ),
     .we       ( data_sel[0]     )
 );
+
+
+// jt1943_romrq #(.AW(15),.INVERT_A0(1)) u_snd(
+//     .rst      ( rst             ),
+//     .clk      ( clk             ),
+//     .cen      ( cen12           ),
+//     .addr     ( snd_addr        ),
+//     .addr_ok  ( snd_cs          ),
+//     .addr_req ( snd_addr_req    ),
+//     .din      ( data_read       ),
+//     .dout     ( snd_dout        ),
+//     .req      ( snd_req         ),
+//     .data_ok  ( snd_ok          ),
+//     .we       ( data_sel[7]     )
+// );
 
 jt1943_romrq #(.AW(14),.DW(16)) u_char(
     .rst      ( rst             ),
@@ -119,6 +139,7 @@ jt1943_romrq #(.AW(14),.DW(16)) u_char(
     .din      ( data_read       ),
     .dout     ( char_dout       ),
     .req      ( char_req        ),
+    .data_ok  (                 ),
     .we       ( data_sel[1]     )
 );
 
@@ -132,6 +153,7 @@ jt1943_romrq #(.AW(14),.DW(16)) u_map1(
     .din      ( data_read       ),
     .dout     ( map1_dout       ),
     .req      ( map1_req        ),
+    .data_ok  (                 ),
     .we       ( data_sel[2]     )
 );
 
@@ -145,6 +167,7 @@ jt1943_romrq #(.AW(14),.DW(16)) u_map2(
     .din      ( data_read       ),
     .dout     ( map2_dout       ),
     .req      ( map2_req        ),
+    .data_ok  (                 ),
     .we       ( data_sel[3]     )
 );
 
@@ -158,6 +181,7 @@ jt1943_romrq #(.AW(17),.DW(16)) u_scr1(
     .din      ( data_read       ),
     .dout     ( scr1_dout       ),
     .req      ( scr1_req        ),
+    .data_ok  (                 ),
     .we       ( data_sel[4]     )
 );
 
@@ -171,6 +195,7 @@ jt1943_romrq #(.AW(15),.DW(16)) u_scr2(
     .din      ( data_read       ),
     .dout     ( scr2_dout       ),
     .req      ( scr2_req        ),
+    .data_ok  (                 ),
     .we       ( data_sel[5]     )
 );
 
@@ -184,6 +209,7 @@ jt1943_romrq #(.AW(17),.DW(16)) u_obj(
     .din      ( data_read       ),
     .dout     ( obj_dout        ),
     .req      ( obj_req         ),
+    .data_ok  (                 ),
     .we       ( data_sel[6]     )
 );
 
@@ -210,6 +236,10 @@ end else if(cen12) begin
             sdram_addr <= { 4'd0, main_addr_req[17:1] };
             data_sel   <= 'b1;
         end
+        // snd_req: begin
+        //     sdram_addr <= snd_offset + { 7'b0, snd_addr_req[14:1] };
+        //     data_sel   <= 'b1000_0000;
+        // end
         map1_req: begin
             sdram_addr <= map1_offset + { 8'b0, map1_addr_req };
             data_sel   <= 'b100;
