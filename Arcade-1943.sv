@@ -21,73 +21,73 @@
 
 module emu
 (
-	//Master input clock
-	input         CLK_50M,
+    //Master input clock
+    input         CLK_50M,
 
-	//Async reset from top-level module.
-	//Can be used as initial reset.
-	input         RESET,
+    //Async reset from top-level module.
+    //Can be used as initial reset.
+    input         RESET,
 
-	//Must be passed to hps_io module
-	inout  [44:0] HPS_BUS,
+    //Must be passed to hps_io module
+    inout  [44:0] HPS_BUS,
 
-	//Base video clock. Usually equals to CLK_SYS.
-	output        VGA_CLK,
+    //Base video clock. Usually equals to CLK_SYS.
+    output        VGA_CLK,
 
-	//Multiple resolutions are supported using different VGA_CE rates.
-	//Must be based on CLK_VIDEO
-	output        VGA_CE,
+    //Multiple resolutions are supported using different VGA_CE rates.
+    //Must be based on CLK_VIDEO
+    output        VGA_CE,
 
-	output  [7:0] VGA_R,
-	output  [7:0] VGA_G,
-	output  [7:0] VGA_B,
-	output        VGA_HS,
-	output        VGA_VS,
-	output        VGA_DE,    // = ~(VBlank | HBlank)
+    output  [7:0] VGA_R,
+    output  [7:0] VGA_G,
+    output  [7:0] VGA_B,
+    output        VGA_HS,
+    output        VGA_VS,
+    output        VGA_DE,    // = ~(VBlank | HBlank)
 
-	//Base video clock. Usually equals to CLK_SYS.
-	output        HDMI_CLK,
+    //Base video clock. Usually equals to CLK_SYS.
+    output        HDMI_CLK,
 
-	//Multiple resolutions are supported using different HDMI_CE rates.
-	//Must be based on CLK_VIDEO
-	output        HDMI_CE,
+    //Multiple resolutions are supported using different HDMI_CE rates.
+    //Must be based on CLK_VIDEO
+    output        HDMI_CE,
 
-	output  [7:0] HDMI_R,
-	output  [7:0] HDMI_G,
-	output  [7:0] HDMI_B,
-	output        HDMI_HS,
-	output        HDMI_VS,
-	output        HDMI_DE,   // = ~(VBlank | HBlank)
-	output  [1:0] HDMI_SL,   // scanlines fx
+    output  [7:0] HDMI_R,
+    output  [7:0] HDMI_G,
+    output  [7:0] HDMI_B,
+    output        HDMI_HS,
+    output        HDMI_VS,
+    output        HDMI_DE,   // = ~(VBlank | HBlank)
+    output  [1:0] HDMI_SL,   // scanlines fx
 
-	//Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
-	output  [7:0] HDMI_ARX,
-	output  [7:0] HDMI_ARY,
+    //Video aspect ratio for HDMI. Most retro systems have ratio 4:3.
+    output  [7:0] HDMI_ARX,
+    output  [7:0] HDMI_ARY,
 
-	output        LED_USER,  // 1 - ON, 0 - OFF.
+    output        LED_USER,  // 1 - ON, 0 - OFF.
 
-	// b[1]: 0 - LED status is system status OR'd with b[0]
-	//       1 - LED status is controled solely by b[0]
-	// hint: supply 2'b00 to let the system control the LED.
-	output  [1:0] LED_POWER,
-	output  [1:0] LED_DISK,
+    // b[1]: 0 - LED status is system status OR'd with b[0]
+    //       1 - LED status is controled solely by b[0]
+    // hint: supply 2'b00 to let the system control the LED.
+    output  [1:0] LED_POWER,
+    output  [1:0] LED_DISK,
 
-	output [15:0] AUDIO_L,
-	output [15:0] AUDIO_R,
-	output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
+    output [15:0] AUDIO_L,
+    output [15:0] AUDIO_R,
+    output        AUDIO_S,   // 1 - signed audio samples, 0 - unsigned
 
-	//SDRAM interface with lower latency
-	output        SDRAM_CLK,
-	output        SDRAM_CKE,
-	output [12:0] SDRAM_A,
-	output  [1:0] SDRAM_BA,
-	inout  [15:0] SDRAM_DQ,
-	output        SDRAM_DQML,
-	output        SDRAM_DQMH,
-	output        SDRAM_nCS,
-	output        SDRAM_nCAS,
-	output        SDRAM_nRAS,
-	output        SDRAM_nWE
+    //SDRAM interface with lower latency
+    output        SDRAM_CLK,
+    output        SDRAM_CKE,
+    output [12:0] SDRAM_A,
+    output  [1:0] SDRAM_BA,
+    inout  [15:0] SDRAM_DQ,
+    output        SDRAM_DQML,
+    output        SDRAM_DQMH,
+    output        SDRAM_nCS,
+    output        SDRAM_nCAS,
+    output        SDRAM_nRAS,
+    output        SDRAM_nWE
 
 );
 
@@ -101,34 +101,36 @@ assign HDMI_ARY = status[1] ? 8'd9  : status[2] ? 8'd3 : 8'd4;
 
 `include "build_id.v" 
 localparam CONF_STR = {
-	"A.1943;;", 
-	"-;",
+    "A.1943;;", 
+    "-;",
     "F,rom;",
-	"O1,Aspect Ratio,Original,Wide;",
-	"O2,Orientation,Vert,Horz;",
-	"O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",  
-	"-;",
-	"OCD,Difficulty,Normal,Easy,Hard,Very hard;",
-	// "O67,Lives,3,1,2,5;",
-	// "O89,Bonus,30/100,30/80,20/100,20/80;",
-	"OA,Invulnerability,No,Yes;",
-	"-;",
-	"R0,Reset;",
-	"J,Fire,Bomb,Start 1P,Start 2P,Coin,Pause;",
-	"V,v",`BUILD_DATE, " http://patreon.com/topapate;"
+    "O1,Aspect Ratio,Original,Wide;",
+    "O2,Orientation,Vert,Horz;",
+    "O35,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%,CRT 75%;",  
+    "-;",
+    "OCD,Difficulty,Normal,Easy,Hard,Very hard;",
+    // "O67,Lives,3,1,2,5;",
+    // "O89,Bonus,30/100,30/80,20/100,20/80;",
+    "OA,Invulnerability,No,Yes;",
+    "-;",
+    "R0,Reset;",
+    "J,Fire,Bomb,Start 1P,Start 2P,Coin,Pause;",
+    "V,v",`BUILD_DATE, " http://patreon.com/topapate;"
 };
 
 ////////////////////   CLOCKS   ///////////////////
 
 wire clk_sys, clk_rom, clk24;
 wire cen12, cen6, cen3, cen1p5;
+wire pll_locked;
 
 pll pll
 (
-	.refclk     ( CLK_50M   ),
-	.outclk_0   ( clk_rom   ),
-	.outclk_1   ( SDRAM_CLK ),
-	.outclk_2   ( clk_sys   )  // 24 MHz
+    .refclk     ( CLK_50M    ),
+    .locked     ( pll_locked ),
+    .outclk_0   ( clk_rom    ),
+    .outclk_1   ( SDRAM_CLK  ),
+    .outclk_2   ( clk_sys    )  // 24 MHz
 );
 
 ///////////////////////////////////////////////////
@@ -178,16 +180,16 @@ always @(posedge clk_sys) begin
         case(code)
             'h75: btn_up         <= pressed; // up
             'h72: btn_down       <= pressed; // down
-            'h6B: btn_left          <= pressed; // left
+            'h6B: btn_left       <= pressed; // left
             'h74: btn_right      <= pressed; // right
             'h05: btn_one_player <= pressed; // F1
             'h06: btn_two_players<= pressed; // F2
-            'h04: btn_coin          <= pressed; // F3
-            'h0C: btn_pause     <= pressed; // F4
-            'h03: btn_test          <= pressed; // F5
-            'h14: btn_fire1         <= pressed; // ctrl
-            'h11: btn_fire1         <= pressed; // alt
-            'h29: btn_fire2     <= pressed; // Space
+            'h04: btn_coin       <= pressed; // F3
+            'h0C: btn_pause      <= pressed; // F4
+            'h03: btn_test       <= pressed; // F5
+            'h14: btn_fire1      <= pressed; // ctrl
+            'h11: btn_fire1      <= pressed; // alt
+            'h29: btn_fire2      <= pressed; // Space
         endcase
     end
 end
@@ -252,7 +254,16 @@ arcade_rotate_fx #(256,224,12,1) arcade_video
 
 ///////////////////////////////////////////////////////////////////
 
-wire reset = RESET | status[0] | buttons[1];
+// wire reset = RESET | status[0] | buttons[1];
+reg [1:0] rstsr;
+wire reset = rstsr[1];
+
+always @(negedge clk24) begin
+    if( RESET || status[0] || buttons[1] || pll_locked ) rstsr <= 2'b11;
+    else rstsr <= { rstsr[0], 1'b0 };
+end
+
+
 
 wire         prog_we;
 wire [21:0]  prog_addr;
@@ -314,25 +325,25 @@ always @(*)
 
 jt1943_game #(.CLK_SPEED(24)) game
 (
-	.rst(reset),
+    .rst           ( reset      ),
 
-	.clk_rom       ( clk_rom    ),
-	.clk           ( clk_sys    ),
-	.cen12         ( cen12      ),
-	.cen6          ( cen6       ),
-	.cen3          ( cen3       ),
-	.cen1p5        ( cen1p5     ),
+    .clk_rom       ( clk_rom    ),
+    .clk           ( clk_sys    ),
+    .cen12         ( cen12      ),
+    .cen6          ( cen6       ),
+    .cen3          ( cen3       ),
+    .cen1p5        ( cen1p5     ),
 
-	.red(r),
-	.green(g),
-	.blue(b),
-	.LHBL(hblank),
-	.LVBL(vblank),
-	.HS(hs),
-	.VS(vs),
+    .red           ( r          ),
+    .green         ( g          ),
+    .blue          ( b          ),
+    .LHBL          ( hblank     ),
+    .LVBL          ( vblank     ),
+    .HS            ( hs         ),
+    .VS            ( vs         ),
 
-	.start_button(~{m_start2,m_start1}),
-	.coin_input(~{1'b0,m_coin}),
+    .start_button(~{m_start2,m_start1}),
+    .coin_input(~{1'b0,m_coin}),
     .joystick1(~{m_jump,m_fire,m_up,m_down,m_left,m_right}),
     .joystick2(~{m_jump,m_fire,m_up,m_down,m_left,m_right}),
 
@@ -355,10 +366,10 @@ jt1943_game #(.CLK_SPEED(24)) game
     .sdram_addr  ( sdram_addr    ),
     .data_read   ( data_read     ),
 
-	.cheat_invincible( status[10] ),
+    .cheat_invincible( status[10] ),
 
     .dip_test    ( ~btn_test      ),
-	.dip_pause   ( ~pause         ),
+    .dip_pause   ( ~pause         ),
     .dip_upright ( dip_upright    ),
     .dip_credits2p( dip_credits2p ),
     .dip_level   ( dip_level      ),
@@ -368,7 +379,7 @@ jt1943_game #(.CLK_SPEED(24)) game
     .dip_price1  ( dip_price1     ),
     .dip_flip    ( 0              ),
 
-	.snd         ( AUDIO_L        ),
+    .snd         ( AUDIO_L        ),
     .gfx_en      ( ~4'b0          )
 );
 
