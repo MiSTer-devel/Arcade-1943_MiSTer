@@ -65,7 +65,8 @@ assign SDRAM_DQ =  SDRAM_WRITE ? {write_data, write_data} : 16'hzzzz;
 
 reg [8:0] col_addr;
 
-reg [3:0] SDRAM_CMD;
+reg [3:0] SDRAM_CMD, 
+    init_cmd; // this is used to reduce the mux depth to SDRAM_CMD
 assign {SDRAM_nCS, SDRAM_nRAS, SDRAM_nCAS, SDRAM_nWE } = SDRAM_CMD;
 
 reg [13:0] wait_cnt;
@@ -85,7 +86,7 @@ wire writeon = downloading && prog_we;
 reg downloading_last;
 reg set_burst, burst_done, burst_mode;
 
-always @(posedge clk)
+always @(posedge clk or posedge rst)
     if(rst) begin
         set_burst <= 1'b0;
     end else begin
@@ -102,11 +103,12 @@ reg [21:0] last_sdram_addr;
 
 wire refresh_ok = last_sdram_addr === sdram_addr;
 
-always @(posedge clk)
+always @(posedge clk or posedge rst)
     if( rst ) begin
         // initialization of SDRAM
         SDRAM_WRITE<= 1'b0;
         SDRAM_CMD <= CMD_NOP;
+        init_cmd  <= CMD_NOP;
         wait_cnt   <= 14'd9750; // wait for 100us
         initialize <= 1'b1;
         init_state <= 3'd0;
@@ -116,21 +118,22 @@ always @(posedge clk)
     end else if( initialize ) begin
         if( |wait_cnt ) begin
             wait_cnt <= wait_cnt-14'd1;
-            SDRAM_CMD <= CMD_NOP;
+            init_cmd  <= CMD_NOP;
+            SDRAM_CMD <= init_cmd;
         end else begin
             if(!init_state[2]) init_state <= init_state+3'd1;
             case(init_state)
                 3'd0: begin
-                    SDRAM_CMD  <= CMD_PRECHARGE;
+                    init_cmd  <= CMD_PRECHARGE;
                     SDRAM_A[10]<= 1'b1; // all banks
-                    wait_cnt   <= 14'd1;
+                    wait_cnt   <= 14'd2;
                 end
                 3'd1: begin
-                    SDRAM_CMD <= CMD_AUTOREFRESH;
-                    wait_cnt  <= 14'd10;
+                    init_cmd <= CMD_AUTOREFRESH;
+                    wait_cnt  <= 14'd11;
                 end
                 3'd2: begin
-                    SDRAM_CMD <= CMD_LOAD_MODE;
+                    init_cmd <= CMD_LOAD_MODE;
                     SDRAM_A   <= 13'b00_1_00_010_0_001; // CAS Latency = 2, burst = 2
                     `ifdef SIMULATION
                     `ifndef LOADROM
@@ -139,15 +142,15 @@ always @(posedge clk)
                         SDRAM_A   <= 12'b00_1_00_010_0_001; // CAS Latency = 2
                     `endif
                     `endif
-                    wait_cnt  <= 14'd2;
+                    wait_cnt  <= 14'd3;
                 end
                 3'd3: begin
-                    SDRAM_CMD  <= CMD_PRECHARGE;
+                    init_cmd  <= CMD_PRECHARGE;
                     SDRAM_A[10]<= 1'b1; // all banks
-                    wait_cnt   <= 14'd1;
+                    wait_cnt   <= 14'd2;
                 end
                 3'd4: initialize <= 1'b0;
-                default:;
+                default: SDRAM_CMD <= init_cmd;
             endcase
         end
     end else  begin // regular operation
@@ -165,10 +168,10 @@ always @(posedge clk)
             read_cycle        <= 1'b0;
             autorefresh_cycle <= 1'b0;
             burst_done        <= 1'b0;
-            if( read_cycle) begin
-                data_read[15: 0] <= data_read[31:16];
-                data_read[31:16] <= SDRAM_DQ;
-            end
+            // if( read_cycle) begin
+            //     data_read[15: 0] <= data_read[31:16];
+            //     data_read[31:16] <= SDRAM_DQ;
+            // end
             {SDRAM_DQMH, SDRAM_DQML } <= 2'b00;
             if( set_burst ) begin
                 SDRAM_CMD <= CMD_LOAD_MODE;
@@ -206,6 +209,13 @@ always @(posedge clk)
         end
         3'd5: begin
             if( read_cycle) begin
+                data_read[31:16] <= SDRAM_DQ;
+            end
+            SDRAM_CMD <= CMD_NOP;
+        end
+        3'd6: begin
+            if( read_cycle) begin
+                data_read[15: 0] <= data_read[31:16];
                 data_read[31:16] <= SDRAM_DQ;
             end
             SDRAM_CMD <= CMD_NOP;
