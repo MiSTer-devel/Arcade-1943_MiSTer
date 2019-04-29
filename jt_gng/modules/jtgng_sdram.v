@@ -23,7 +23,7 @@ module jtgng_sdram(
     input               rst,
     input               clk, // 96MHz = 32 * 6 MHz -> CL=2
     output              loop_rst,
-    input               autorefresh,
+    input               read_sync,   // read strobe
     input               read_req,    // read strobe
     output reg  [31:0]  data_read,
     input       [21:0]  sdram_addr,
@@ -77,19 +77,23 @@ reg write_cycle=1'b0, read_cycle=1'b0;
 
 assign loop_rst = initialize;
 
-reg last_read_req;
+reg last_read_sync;
 
-always @(posedge clk) last_read_req <= read_req;
-wire readon  = !downloading && ((read_req!=last_read_req) /*|| autorefresh*/);
-wire writeon = downloading && prog_we;
-
+always @(posedge clk) last_read_sync <= read_sync;
 reg downloading_last;
+
+// Uses downloading_last instead of downloading to alleviate
+// top level timing
+
 reg set_burst, burst_done, burst_mode;
+reg readon, writeon;
 
 always @(posedge clk or posedge rst)
     if(rst) begin
         set_burst <= 1'b0;
     end else begin
+        readon  <= !downloading_last && (read_sync!=last_read_sync);
+        writeon <= downloading_last && prog_we;
         downloading_last <= downloading;
         if( downloading != downloading_last) begin
             set_burst <= 1'b1;
@@ -99,9 +103,7 @@ always @(posedge clk or posedge rst)
     end
 
 reg autorefresh_cycle;
-reg [21:0] last_sdram_addr;
-
-wire refresh_ok = last_sdram_addr === sdram_addr;
+wire refresh_ok = !read_req;
 
 always @(posedge clk or posedge rst)
     if( rst ) begin
@@ -190,7 +192,6 @@ always @(posedge clk or posedge rst)
                     {SDRAM_DQMH, SDRAM_DQML } <= prog_mask;
                 end
                 if( readon ) begin
-                    last_sdram_addr <= sdram_addr;
                     SDRAM_CMD <=
                         refresh_ok ? CMD_AUTOREFRESH : CMD_ACTIVATE;
                     { SDRAM_A, col_addr } <= sdram_addr;
