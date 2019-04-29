@@ -87,11 +87,15 @@ reg downloading_last;
 
 reg set_burst, burst_done, burst_mode;
 reg readon, writeon;
+reg refresh_ok;
+reg [21:0]  latched_addr;
 
 always @(posedge clk or posedge rst)
     if(rst) begin
         set_burst <= 1'b0;
     end else begin
+        refresh_ok <= !read_req;
+        latched_addr <= sdram_addr;
         readon  <= !downloading_last && (read_sync!=last_read_sync);
         writeon <= downloading_last && prog_we;
         downloading_last <= downloading;
@@ -103,7 +107,6 @@ always @(posedge clk or posedge rst)
     end
 
 reg autorefresh_cycle;
-wire refresh_ok = !read_req;
 
 always @(posedge clk or posedge rst)
     if( rst ) begin
@@ -194,7 +197,7 @@ always @(posedge clk or posedge rst)
                 if( readon ) begin
                     SDRAM_CMD <=
                         refresh_ok ? CMD_AUTOREFRESH : CMD_ACTIVATE;
-                    { SDRAM_A, col_addr } <= sdram_addr;
+                    { SDRAM_A, col_addr } <= latched_addr;
                     autorefresh_cycle <= refresh_ok;
                     read_cycle        <= ~refresh_ok;
                     write_cycle       <= 1'b0;
