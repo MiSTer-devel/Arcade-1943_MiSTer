@@ -1,3 +1,4 @@
+set_global_assignment -name SYSTEMVERILOG_FILE [file join $::quartus(qip_path) jt1943_mister.sv   ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) jt1943_sound.v     ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) jt1943_scroll.v    ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) jt1943_main.v      ]
@@ -12,6 +13,7 @@ set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) jt1943_
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) jt1943_objdraw.v   ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) jt1943_security.v  ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../modules/jtgng_prom.v      ]
+set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../modules/jt12/hdl/jt12_rst.v      ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../modules/jtgng_timer.v     ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../modules/jtgng_ram.v       ]
 set_global_assignment -name VERILOG_FILE [file join $::quartus(qip_path) ../../modules/jtgng_objdma.v    ]

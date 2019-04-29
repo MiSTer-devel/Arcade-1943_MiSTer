@@ -51,7 +51,7 @@ set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS OFF
 set_global_assignment -name OPTIMIZE_POWER_DURING_FITTING OFF
 set_global_assignment -name FINAL_PLACEMENT_OPTIMIZATION ALWAYS
 set_global_assignment -name FITTER_EFFORT "STANDARD FIT"
-set_global_assignment -name OPTIMIZATION_MODE "HIGH PERFORMANCE EFFORT"
+set_global_assignment -name OPTIMIZATION_MODE "AGGRESSIVE PERFORMANCE"
 set_global_assignment -name ALLOW_POWER_UP_DONT_CARE ON
 set_global_assignment -name QII_AUTO_PACKED_REGISTERS NORMAL
 set_global_assignment -name ROUTER_LCELL_INSERTION_AND_LOGIC_DUPLICATION ON
@@ -65,7 +65,7 @@ set_global_assignment -name AUTO_DELAY_CHAINS_FOR_HIGH_FANOUT_INPUT_PINS ON
 set_global_assignment -name PHYSICAL_SYNTHESIS_COMBO_LOGIC_FOR_AREA ON
 set_global_assignment -name ADV_NETLIST_OPT_SYNTH_WYSIWYG_REMAP ON
 set_global_assignment -name SYNTH_GATED_CLOCK_CONVERSION ON
-set_global_assignment -name SEED 8
+set_global_assignment -name SEED 0
 
 #============================================================
 # ADC
@@ -362,6 +362,9 @@ set_location_assignment PIN_W20 -to SW[3]
 
 set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
 
+set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[0].gpll"
+set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[1].gpll"
+set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[2].gpll"
 set_global_assignment -name QIP_FILE sys/pll24.qip
 set_global_assignment -name CDF_FILE jtag.cdf
 set_global_assignment -name QIP_FILE sys/sys.qip
@@ -372,8 +375,6 @@ set_global_assignment -name VERILOG_FILE jt_gng/modules/jtgng_sdram.v
 set_global_assignment -name QIP_FILE jt_gng/modules/jt12/hdl/jt03.qip
 set_global_assignment -name QIP_FILE jt_gng/modules/t80/T80.qip
 set_global_assignment -name QIP_FILE jt_gng/1943/hdl/jt1943.qip
-set_global_assignment -name SYSTEMVERILOG_FILE "Arcade-1943.sv"
-set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[0].gpll"
-set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[1].gpll"
-set_location_assignment FRACTIONALPLL_X89_Y1_N0 -to "emu:emu|pll:pll|pll_0002:pll_inst|altera_pll:altera_pll_i|general[2].gpll"
+set_global_assignment -name ROUTER_REGISTER_DUPLICATION ON
+set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT EXTRA
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

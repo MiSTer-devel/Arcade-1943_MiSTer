@@ -39,7 +39,7 @@ module jt1943_main(
     output  reg        char_cs,
     output  reg        CHON,    // 1 enables character output
     output             cpu_cen,
-    input              char_wait_n,
+    input              char_wait,
     // scroll
     output  reg [7:0]  scrposv,
     output  reg [1:0]  scr1posh_cs,
@@ -65,9 +65,10 @@ module jt1943_main(
     output             bus_ack,  // bus acknowledge
     input              blcnten,  // bus line counter enable
     // ROM access
-    output  reg        main_cs,
+    output  reg        rom_cs,
     output  reg [17:0] rom_addr,
     input       [ 7:0] rom_data,
+    input              rom_ok,
     // DIP switches
     input    [7:0]     dipsw_a,
     input    [7:0]     dipsw_b,
@@ -75,7 +76,7 @@ module jt1943_main(
 );
 
 wire [15:0] A;
-reg t80_rst_n;
+wire t80_rst_n;
 reg in_cs, ram_cs, bank_cs, scrposv_cs, gfxen_cs;
 reg SECWR_cs;
 
@@ -84,7 +85,7 @@ assign cpu_cen = cen6;
 assign bus_ack = ~busak_n;
 
 always @(*) begin
-    main_cs       = 1'b0;
+    rom_cs       = 1'b0;
     ram_cs        = 1'b0;
     snd_latch_cs  = 1'b0;
     scrposv_cs    = 1'b0;
@@ -98,8 +99,8 @@ always @(*) begin
     OKOUT         = 1'b0;
     SECWR_cs      = 1'b0;
     if( rfsh_n && !mreq_n ) casez(A[15:13])
-        3'b0??: main_cs = 1'b1;
-        3'b10?: main_cs = 1'b1; // bank
+        3'b0??: rom_cs = 1'b1;
+        3'b10?: rom_cs = 1'b1; // bank
         3'b110: // cscd
             case(A[12:11])
                 2'b00: // Part 11B
@@ -161,8 +162,11 @@ always @(posedge clk)
         end
     end
 
-always @(negedge clk)
-    t80_rst_n <= ~rst;
+jt12_rst u_rst(
+    .rst    ( rst       ),
+    .clk    ( clk       ),
+    .rst_n  ( t80_rst_n )
+);
 
 reg [7:0] cabinet_input;
 wire [7:0] security;
@@ -187,7 +191,7 @@ always @(*)
 wire cpu_ram_we = ram_cs && !wr_n;
 assign cpu_AB = A[12:0];
 
-wire [12:0] RAM_addr = blcnten ? { 4'hf, obj_AB } : cpu_AB;
+wire [12:0] RAM_addr = blcnten ? obj_AB : cpu_AB;
 wire RAM_we   = blcnten ? 1'b0 : cpu_ram_we;
 
 jtgng_ram #(.aw(13),.cen_rd(0)) RAM(
@@ -205,7 +209,7 @@ wire iorq_n, m1_n;
 wire irq_ack = !iorq_n && !m1_n;
 
 always @(*)
-    case( {ram_cs, char_cs, main_cs, in_cs} )
+    case( {ram_cs, char_cs, rom_cs, in_cs} )
         4'b10_00: cpu_din = // (cheat_invincible && (A==16'hf206 || A==16'hf286)) ? 8'h40 :
                             ram_dout;
         4'b01_00: cpu_din = char_dout;
@@ -244,20 +248,49 @@ always @(posedge clk)
     end
 
 reg [1:0] mem_wait_n;
-wire wait_n = char_wait_n & mem_wait_n[0];
+//wire wait_n = char_wait_n & mem_wait_n[0];
+reg wait_n;
+reg last_rom_cs, last_chwait;
+wire rom_cs_posedge = !last_rom_cs && rom_cs;
+wire chwait_posedge = !last_chwait && char_wait;
 
-// The PCB has a slow down mechanism for the main CPU
-// is loses one clock cycle at the beginning of every machine cycle
-always @(posedge clk)
-    if(rst)
+reg char_free, rom_free, mem_free;
+
+always @(posedge clk or negedge t80_rst_n)
+    if( !t80_rst_n ) begin
+        wait_n <= 1'b1;
         mem_wait_n[0] <= 1'b1;
-    else // do not clock gate this!
+        char_free <= 1'b0;
+        rom_free  <= 1'b0;
+        mem_free  <= 1'b0;
+    end else begin
+        last_rom_cs <= rom_cs;
+        last_chwait <= char_wait;
         mem_wait_n[0] <= !mem_wait_n[1] ? 1'b1 : m1_n; // & mreq_n; // mreq_n
-            // signal was not in the original schematics. Bug?
-
-always @(posedge clk) if(cpu_cen) mem_wait_n[1] <= mem_wait_n[0];
-
-
+        if(cpu_cen) mem_wait_n[1] <= mem_wait_n[0];
+        if( (char_wait&&char_cs) || rom_cs_posedge || !mem_wait_n[1]) begin
+            // The PCB has a slow down mechanism for the main CPU
+            // it loses one clock cycle at the beginning of every machine cycle
+            if( char_wait&&char_cs ) char_free <= 1'b1;
+            if( rom_cs_posedge ) rom_free  <= 1'b1;
+            if( !mem_wait_n ) mem_free  <= 1'b1;
+            wait_n <= 1'b0;
+        end
+        else begin
+            if( rom_ok     && rom_free  ) begin
+                wait_n <= 1'b1;
+                rom_free <= 1'b0;
+            end
+            if( !char_wait && char_free ) begin
+                wait_n <= 1'b1;
+                char_free <= 1'b0;
+            end
+            if( mem_wait_n[1] && mem_free ) begin
+                wait_n <= 1'b1;
+                mem_free <= 1'b0;
+            end
+        end
+    end
 
 jt1943_security u_security(
     .clk    ( clk      ),

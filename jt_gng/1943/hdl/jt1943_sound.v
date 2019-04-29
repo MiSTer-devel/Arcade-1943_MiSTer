@@ -22,11 +22,11 @@
 `timescale 1ns/1ps
 
 module jt1943_sound(
+    input           rst,
     input           clk,    // 24   MHz
     input           cen3   /* synthesis direct_enable = 1 */,   //  3   MHz
     input           cen1p5, //  1.5 MHz
     input           main_cen, // clock enable of main CPU
-    input           rst,
     // Interface with main CPU
     input           sres_b,
     input   [ 7:0]  main_dout,
@@ -43,8 +43,10 @@ module jt1943_sound(
     output  [15:0]  snd
 );
 
+wire [14:0] rom_addr;
+reg         rom_cs;
+wire        mreq_n;
 wire [7:0]  rom_data;
-wire mreq_n;
 
 // posedge of snd_int
 reg snd_int_last;
@@ -58,13 +60,12 @@ reg reset_n=1'b0;
 // interrupt latch
 reg int_n;
 wire iorq_n;
-always @(posedge clk)
+always @(posedge clk or negedge reset_n)
     if( !reset_n ) int_n <= 1'b1;
     else if(cen3) begin
         if(!iorq_n) int_n <= 1'b1;
         else if( snd_int_edge ) int_n <= 1'b0;
     end
-
 
 // local reset
 reg [3:0] rst_cnt;
@@ -76,14 +77,15 @@ always @(negedge clk)
     end else begin
         if( rst_cnt != ~4'b0 ) begin
             reset_n <= 1'b0;
-            rst_cnt <= rst_cnt + 'd1;
+            rst_cnt <= rst_cnt + 4'd1;
         end else reset_n <= 1'b1;
     end
 
-reg rom_cs, fm1_cs, fm0_cs, latch_cs, ram_cs, SECWR_cs;
+reg fm1_cs, fm0_cs, latch_cs, ram_cs, SECWR_cs;
 
 reg [7:0] latch;
 wire [15:0] A;
+assign rom_addr = A[14:0];
 
 always @(*) begin
     rom_cs   = 1'b0;
@@ -110,17 +112,30 @@ always @(*) begin
 end
 
 
-reg [1:0] cs_wait;
-always @(posedge clk)
-    if( !reset_n )
-        cs_wait <= 2'b11;
-    else if(cen3) begin
-        cs_wait <= { cs_wait[0], ~(fm0_cs|fm1_cs) };
+reg [1:0] fm_wait;
+reg wait_n;
+wire fmx_cs = fm0_cs|fm1_cs;
+reg last_fmx_cs;
+wire fmx_cs_posedge = !last_fmx_cs && fmx_cs;
+wire fm_lock = |fm_wait;
+
+always @(posedge clk or negedge reset_n)
+    if( !reset_n ) begin
+        fm_wait  <= 2'b11;
+    end else if(cen3) begin
+        fm_wait  <= {  fm_wait[0], fmx_cs_posedge };
     end // else if(cen3)
 
-wire wait_n = ~cs_wait[1] | cs_wait[0];
 
-always @(posedge clk)
+always @(posedge clk or negedge reset_n)
+    if( !reset_n )
+        wait_n <= 1'b1;
+    else begin
+        last_fmx_cs <= fmx_cs;
+        wait_n <= !fm_lock;
+    end
+
+always @(posedge clk or negedge reset_n)
 if( !reset_n ) begin
     latch <= 8'd0;
 end else if(main_cen) begin
@@ -143,24 +158,35 @@ jtgng_ram #(.aw(11)) u_ram(
 );
 
 // full 32kB ROM is inside the FPGA to alleviate SDRAM bandwidth
+// latch program signals
+reg [14:0]  prog_latch_addr;
+reg [7:0]   prog_latch_din;
+reg         prog_latch_we;
+
+always @(posedge clk) begin
+    prog_latch_addr <= prog_addr; 
+    prog_latch_din  <= prom_din;
+    prog_latch_we   <= prom_4k_we;
+end
+
+
 jtgng_prom #(.aw(14),.dw(8),.simfile("../../../rom/1943/bm05.4k.lsb")) u_prom0(
     .clk    ( clk               ),
     .cen    ( cen3              ),
-    .data   ( prom_din          ),
+    .data   ( prog_latch_din          ),
     .rd_addr( A[13:0]           ),
-    .wr_addr( prog_addr[13:0]   ),
-    .we     ( prom_4k_we & !prog_addr[14] ),
+    .wr_addr( prog_latch_addr[13:0]   ),
+    .we     ( prog_latch_we & !prog_latch_addr[14] ),
     .q      ( rom_data0   )
 );
 
-// full 32kB ROM is inside the FPGA to alleviate SDRAM bandwidth
 jtgng_prom #(.aw(14),.dw(8),.simfile("../../../rom/1943/bm05.4k.msb")) u_prom1(
     .clk    ( clk               ),
     .cen    ( cen3              ),
-    .data   ( prom_din          ),
+    .data   ( prog_latch_din          ),
     .rd_addr( A[13:0]           ),
-    .wr_addr( prog_addr[13:0]   ),
-    .we     ( prom_4k_we & prog_addr[14]  ),
+    .wr_addr( prog_latch_addr[13:0]   ),
+    .we     ( prog_latch_we & prog_latch_addr[14]  ),
     .q      ( rom_data1   )
 );
 

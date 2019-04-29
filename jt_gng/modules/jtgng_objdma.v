@@ -22,6 +22,8 @@ module jtgng_objdma(
     input              cen6,    //  6 MHz
     // screen
     input              LVBL,
+    input              pause,
+    output      [ 2:0] avatar_idx,
     // shared bus
     output  reg [ 8:0] AB,
     input       [ 7:0] DB,
@@ -31,7 +33,7 @@ module jtgng_objdma(
     output  reg        blen,     // bus line counter enable
     // output data
     input       [8:0]  pre_scan,
-    output      [7:0]  ram_dout
+    output  reg [7:0]  ram_dout
 );
 
 reg [1:0] bus_state;
@@ -95,19 +97,101 @@ always @(posedge clk)
 
 
 wire [9:0]  wr_addr = mem_sel==MEM_PREBUF ? {1'b0, AB } : 10'd0;
-wire [7:0]  ram_din = mem_sel==MEM_PREBUF ? DB : 8'd0;
 wire        ram_we  = mem_sel==MEM_PREBUF ? blen : 1'b0;
 
-jtgng_dual_ram #(.aw(10)) objram (
+`ifndef OBJTEST
+wire [7:0]  ram_din = mem_sel==MEM_PREBUF ? DB : 8'd0;
+`else 
+wire [7:0] ram_din;
+jtgng_ram #(.aw(9),.simfile("objtest.bin"),.cen_rd(0)) u_testram(
+    .clk        ( clk       ),
+    .cen        ( 1'b1      ),
+    .addr       ( AB        ),
+    .data       ( 9'd0      ),
+    .we         ( 1'b0      ),
+    .q          ( ram_din   )
+);
+`endif
+
+wire [7:0] buf_data;
+
+jtgng_dual_ram #(.aw(10)) u_objram (
     .clk        ( clk               ),
     .clk_en     ( cen6              ),
     .data       ( ram_din           ),
     .rd_addr    ( {1'b0, pre_scan } ),
     .wr_addr    ( wr_addr           ),
     .we         ( ram_we            ),
-    .q          ( ram_dout          )
+    .q          ( buf_data          )
 );
 
+`ifdef AVATARS
+// Pause objects
 
+// jtgng_ram #(.aw(10), .synfile("avatar_xy.hex"),.cen_rd(1))u_avatars(
+//     .clk    ( clk           ),
+//     .cen    ( pause         ),  // tiny power saving when not in pause
+//     .data   ( 8'd0          ),
+//     .addr   ( {1'b0, pre_scan } ),
+//     .we     ( 1'b0          ),
+//     .q      ( avatar_data   )
+// );
+wire [ 7:0] avatar_id;
+reg  [ 7:0] avatar_data;
+reg  [10:0] avatar_cnt = 0;
+assign      avatar_idx = avatar_cnt[10:8];
+
+jtgng_ram #(.aw(7), .synfile("avatar_obj.hex"),.cen_rd(1))u_avatars(
+    .clk    ( clk           ),
+    .cen    ( pause         ),  // tiny power saving when not in pause
+    .data   ( 8'd0          ),
+    .addr   ( {avatar_idx, pre_scan[5:2] } ),
+    .we     ( 1'b0          ),
+    .q      ( avatar_id   )
+);
+
+reg lastLVBL;
+always @(posedge clk) begin
+    lastLVBL <= LVBL;
+    if( !LVBL && lastLVBL ) avatar_cnt<=avatar_cnt+11'd1;
+end
+
+reg [7:0] avatar_y, avatar_x;
+
+always @(posedge clk) begin
+    if(pre_scan[8:6]==3'd0) begin
+        case( pre_scan[5:2] )
+            4'd0,4'd1,4'd2: avatar_y <= ~avatar_cnt[7:0];
+            4'd3,4'd4,4'd5: avatar_y <= ~avatar_cnt[7:0] + 8'h10;
+            4'd6,4'd7,4'd8: avatar_y <= ~avatar_cnt[7:0] + 8'h20;
+            default: avatar_y <= 8'hf8;
+        endcase
+        case( pre_scan[5:2] )
+            4'd0,4'd3,4'd6: avatar_x <= 8'h10;
+            4'd1,4'd4,4'd7: avatar_x <= 8'h10 + 8'h10;
+            4'd2,4'd5,4'd8: avatar_x <= 8'h10 + 8'h20;
+            default: avatar_x <= 8'hf8;
+        endcase
+    end
+    else begin
+        avatar_y <= 8'hf8;
+        avatar_x <= 8'hf8;
+    end
+end
+
+always @(*) begin
+    case( pre_scan[1:0] )
+        2'd0: avatar_data = pre_scan[8:6]==3'd0 ? avatar_id : 8'd63;
+        2'd1: avatar_data = { 5'd0, avatar_idx }; // palette index, one palette per avatar
+        2'd2: avatar_data = avatar_id==8'd63 ? 8'hf8 : avatar_y;
+        2'd3: avatar_data = avatar_id==8'd63 ? 8'hf8 : avatar_x;
+    endcase
+    ram_dout = pause ? avatar_data : buf_data;
+end
+
+`else 
+always @(*) ram_dout = buf_data;
+assign avatar_idx = 3'd0;
+`endif
 
 endmodule // load
