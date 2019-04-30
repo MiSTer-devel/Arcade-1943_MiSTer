@@ -17,16 +17,25 @@ create_generated_clock -source [get_pins -compatibility_mode {pll_hdmi|pll_hdmi_
 
 derive_clock_uncertainty
 
+#############################################################
+### SDRAM  AS4C16M16SA
+###
 
-set_input_delay -max -clock SDRAM_CLK 6.4ns [get_ports SDRAM_DQ[*]]
-set_input_delay -min -clock SDRAM_CLK 3.7ns [get_ports SDRAM_DQ[*]]
+# This is tAC in the data sheet
+set_input_delay -max -clock SDRAM_CLK 6.0ns [get_ports SDRAM_DQ[*]]
+# this is tOH in the data sheet
+set_input_delay -min -clock SDRAM_CLK 2.5ns [get_ports SDRAM_DQ[*]]
 
-set_multicycle_path -from [get_clocks {SDRAM_CLK}] \
-                    -to [get_clocks {*|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] \
-                                                  -setup 2
+#set_multicycle_path -from [get_clocks {SDRAM_CLK}] \
+#                    -to [get_clocks {*|pll|pll_inst|altera_pll_i|general[0].gpll~PLL_OUTPUT_COUNTER|divclk}] \
+#                                                  -setup 2
 
-set_output_delay -max -clock SDRAM_CLK 1.6ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
-set_output_delay -min -clock SDRAM_CLK -0.9ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
+# This is tIS in the data sheet (setup time)
+set_output_delay -max -clock SDRAM_CLK 1.5ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
+# This is tiH in the data sheet (hold time)
+set_output_delay -min -clock SDRAM_CLK 0.8ns [get_ports {SDRAM_D* SDRAM_A* SDRAM_BA* SDRAM_n* SDRAM_CKE}]
+
+##################################################################
 
 # Decouple different clock groups (to simplify routing)
 set_clock_groups -asynchronous \
