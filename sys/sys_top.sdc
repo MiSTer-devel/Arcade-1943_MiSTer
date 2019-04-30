@@ -8,8 +8,7 @@ create_clock -period 10.0 [get_pins -compatibility_mode spi|sclk_out] -name spi_
 derive_pll_clocks
 
 # Specify PLL-generated clock(s)
-create_generated_clock -source [get_pins -compatibility_mode {*|pll|pll_inst|altera_pll_i|general[1].gpll~PLL_OUTPUT_COUNTER|divclk}] \
-                       -name SDRAM_CLK [get_ports {SDRAM_CLK}]
+create_generated_clock -name SDRAM_CLK -source [get_pins {emu|pll|pll_inst|altera_pll_i|outclk_wire[2]~CLKENA0|outclk}] [get_ports {SDRAM_CLK}]
 
 create_generated_clock -source [get_pins -compatibility_mode {pll_hdmi|pll_hdmi_inst|altera_pll_i|cyclonev_pll|counter[0].output_counter|divclk}] \
                        -name HDMI_CLK [get_ports HDMI_TX_CLK]
