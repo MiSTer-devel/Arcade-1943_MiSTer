@@ -69,7 +69,7 @@ validate_rom() {
     echo -e "Actual checksum:\n${ofileMd5sumCurrent}"
     mv ${BASEDIR}/${tmpdir}/${ofile} .
     rm -rf ${BASEDIR}/$tmpdir
-    echo -e "Generated ${ofile}\nis invalid.\nThis is more likely\ndue to incorrect\n${zip} content."
+    exit_with_error "Generated ${ofile}\nis invalid.\nThis is more likely\ndue to incorrect\n${zip} content."
   else
     mv ${BASEDIR}/${tmpdir}/${ofile} ${BASEDIR}/.
     rm -rf ${BASEDIR}/$tmpdir
